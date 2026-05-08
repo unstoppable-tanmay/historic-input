@@ -1,6 +1,6 @@
 {
   "name": "historic-input",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Historic Input — persist and recall input values per data-history tag using arrow keys",
   "type": "module",
   "main": "./dist/index.cjs",
