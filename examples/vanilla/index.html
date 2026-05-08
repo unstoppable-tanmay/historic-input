@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Historic Input — features &amp; usage</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 36rem;
+        margin: 2rem auto;
+        padding: 0 1rem 3rem;
+        color: #222;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem;
+      }
+      h2 {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin: 1.75rem 0 0.5rem;
+      }
+      p,
+      li {
+        color: #444;
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      ul {
+        margin: 0.35rem 0 0.75rem;
+        padding-left: 1.15rem;
+      }
+      li {
+        margin: 0.25rem 0;
+      }
+      code {
+        font-size: 0.85em;
+      }
+      pre {
+        margin: 0.5rem 0 0.75rem;
+        padding: 0.75rem 1rem;
+        background: #f4f4f4;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+      pre code {
+        font-size: 1em;
+      }
+      label {
+        display: block;
+        margin-top: 1.1rem;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        margin-top: 0.35rem;
+        padding: 0.5rem;
+      }
+      .muted {
+        color: #666;
+        font-size: 0.88rem;
+      }
+      hr {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 2rem 0 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Historic Input</h1>
+    <p class="muted">
+      Zero-framework helpers for <code>&lt;input&gt;</code> and
+      <code>&lt;textarea&gt;</code>: tag-based history in storage, recall with arrow up /
+      down, configurable saves, optional idle commit, keyboard clear, and a small API for
+      programmatic clear. Works in <strong>React</strong> and <strong>Angular</strong> by
+      calling <code>init()</code> once on the client — same package, no framework-specific
+      build.
+    </p>
+
+    <h2>Install</h2>
+    <pre><code>npm install historic-input</code></pre>
+
+    <h2>Quick start</h2>
+    <p>
+      Mark fields with <code>data-history="your-tag"</code> (shared history for the same
+      tag). Run once when the DOM is ready.
+    </p>
+    <pre><code>&lt;input type="search" data-history="my-tag" /&gt;</code></pre>
+    <pre><code>import { init } from "historic-input";
+
+const stop = init();
+
+// later: stop();</code></pre>
+    <p>
+      <code>init()</code> scans the document, attaches listeners, and watches for new
+      nodes with <code>MutationObserver</code>. Use at end of
+      <code>&lt;body&gt;</code> or inside <code>DOMContentLoaded</code>.
+    </p>
+
+    <h2><code>init</code> options</h2>
+    <p>Pass an object; all keys optional.</p>
+    <ul>
+      <li>
+        <code>storage</code> — default <code>localStorage</code>; used when a field has
+        no <code>data-history-storage</code>.
+      </li>
+      <li>
+        <code>storageKeyPrefix</code> — default <code>"historic-input:"</code>
+        (see also <code>DEFAULT_STORAGE_KEY_PREFIX</code> export). Stored key is prefix
+        + tag.
+      </li>
+      <li>
+        <code>maxEntries</code> — default <code>50</code>; max strings per tag.
+      </li>
+      <li>
+        <code>commitOn</code> — default <code>["blur", "enter"]</code>;
+        <code>enter</code> applies to single-line <code>&lt;input&gt;</code> only.
+      </li>
+      <li>
+        <code>commitAfterIdleMs</code> — default <code>0</code>; if set, save after that
+        many ms without a trusted input event (global default).
+      </li>
+      <li>
+        <code>clearHistoryKey</code> — optional default key for clearing stored history
+        while focused; per-field <code>data-history-clear-key</code> overrides.
+      </li>
+    </ul>
+    <p>
+      Return value of <code>init()</code> is a teardown function: removes listeners,
+      observer, and idle timers.
+    </p>
+
+    <h2>Per-field attributes</h2>
+    <p>On the same element as <code>data-history="..."</code>:</p>
+    <ul>
+      <li>
+        <code>data-history-storage</code> — <code>local</code> or <code>session</code>.
+        Same tag with different storage is a different list.
+      </li>
+      <li><code>data-history-max</code> — overrides <code>maxEntries</code>.</li>
+      <li>
+        <code>data-history-commit</code> — space or comma: <code>blur</code>,
+        <code>enter</code>; overrides <code>commitOn</code>.
+      </li>
+      <li>
+        <code>data-history-idle-ms</code> — idle delay ms; overrides
+        <code>commitAfterIdleMs</code>; use <code>0</code> to disable idle on that field.
+      </li>
+      <li>
+        <code>data-history-clear-key</code> — while focused, this key removes saved
+        history for this tag in this field’s storage; does not clear the visible value.
+        Uses <code>KeyboardEvent.key</code> semantics; shorthand:
+        <code>Esc</code>/<code>escape</code> → Escape,
+        <code>Del</code>/<code>delete</code> → Delete.
+      </li>
+    </ul>
+
+    <h2>Clear history from code</h2>
+    <pre><code>import {
+  clearHistory,
+  DEFAULT_STORAGE_KEY_PREFIX,
+} from "historic-input";
+
+clearHistory("my-tag");
+
+clearHistory("my-tag", { storage: sessionStorage });
+
+clearHistory("my-tag", {
+  storage: localStorage,
+  storageKeyPrefix: DEFAULT_STORAGE_KEY_PREFIX,
+});</code></pre>
+    <p>
+      Match <code>storage</code> and <code>storageKeyPrefix</code> to each field’s
+      <code>data-history-storage</code> and your <code>init({ storageKeyPrefix })</code>.
+    </p>
+
+    <h2>Idle save and arrow keys</h2>
+    <p>
+      Idle only runs after trusted user edits (typing, paste, cut). Arrow up /
+      down changes from history browsing do not arm idle; pending idle from typing is
+      cancelled when you navigate history.
+    </p>
+
+    <h2>React</h2>
+    <p>
+      Install <code>historic-input</code>. Call <code>init()</code> inside
+      <code>useEffect</code>; return the teardown function so listeners are removed when
+      the component unmounts. Effect runs on the client only — safe with SSR.
+    </p>
+    <pre><code>import { useEffect } from "react";
+import { init } from "historic-input";
+
+export function App() {
+  useEffect(() =&gt; {
+    const stop = init();
+    return stop;
+  }, []);
+
+  return (
+    &lt;input type="search" data-history="react-demo" /&gt;
+  );
+}</code></pre>
+    <p>
+      Use normal JSX attributes: <code>data-history</code>,
+      <code>data-history-clear-key</code>, <code>data-history-storage</code>, etc. For
+      <strong>controlled</strong> inputs (<code>value=&#123;state&#125;</code>), React may
+      fight history navigation — prefer <code>defaultValue</code> / uncontrolled fields or
+      keep state aligned when the value changes.
+    </p>
+
+    <h2>Angular</h2>
+    <p>
+      Install <code>historic-input</code>. Start <code>init()</code> in
+      <code>ngAfterViewInit</code>, stop in <code>ngOnDestroy</code>. Use
+      <code>isPlatformBrowser</code> so SSR never calls <code>init</code>.
+    </p>
+    <pre><code>import { Component, AfterViewInit, OnDestroy, Inject, PLATFORM_ID } from "@angular/core";
+import { isPlatformBrowser } from "@angular/common";
+import { init } from "historic-input";
+
+@Component({
+  selector: "app-root",
+  standalone: true,
+  template: `&lt;input type="search" data-history="angular-demo" /&gt;`,
+})
+export class AppComponent implements AfterViewInit, OnDestroy {
+  private stop?: () =&gt; void;
+
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
+
+  ngAfterViewInit(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.stop = init();
+  }
+
+  ngOnDestroy(): void {
+    this.stop?.();
+  }
+}</code></pre>
+
+    <hr />
+
+    <h2>Live demos</h2>
+    <p class="muted">
+      Save with blur / Enter as noted; use ↑ / ↓ to recall. Session field uses
+      <code>sessionStorage</code> until the tab closes.
+    </p>
+    <label>
+      Search — localStorage · max 10 · blur + enter ·
+      <code>data-history-clear-key="Esc"</code>
+      <input
+        type="search"
+        data-history="search"
+        data-history-max="10"
+        data-history-commit="blur enter"
+        data-history-clear-key="Esc"
+        placeholder="Focus here and press Esc to clear saved history for this tag"
+      />
+    </label>
+    <label>
+      Session — <code>data-history-storage="session"</code> · clear with Delete
+      <input
+        type="text"
+        data-history="session-demo"
+        data-history-storage="session"
+        data-history-commit="blur enter"
+        data-history-clear-key="Delete"
+        placeholder="Persists until tab closes; focus and press Delete to clear history"
+      />
+    </label>
+    <label>
+      Notes — blur only (<code>Enter</code> inserts a newline)
+      <textarea
+        data-history="notes"
+        data-history-commit="blur"
+        rows="4"
+        placeholder="Blur saves; arrows recall"
+      ></textarea>
+    </label>
+    <label>
+      Idle save — <code>data-history-idle-ms="1200"</code>
+      <input
+        type="text"
+        data-history="idle-demo"
+        data-history-commit="blur enter"
+        data-history-idle-ms="1200"
+        data-history-max="20"
+        placeholder="Pause typing 1.2s to save (also blur/enter)"
+      />
+    </label>
+
+    <hr />
+
+    <h2>Run this page locally</h2>
+    <p class="muted">From the package repo root (after <code>npm install</code>):</p>
+    <pre><code>npm run build
+npm run example</code></pre>
+    <p class="muted">MIT license · see repo <code>README.md</code> for links.</p>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
